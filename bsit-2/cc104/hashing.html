@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Hashing in Data Structures</title>
+        <meta name="description" content="An interactive lesson on hashing in data structures." />
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e1b33'/%3E%3Cpath d='M15 20h34M15 32h34M15 44h34M24 12v40M40 12v40' stroke='%2337e0af' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E"
+        />
+        <style>
+            :root {
+                --ink: #eff7ff;
+                --muted: #a9bbd2;
+                --navy: #081427;
+                --blue: #0d2b55;
+                --mint: #37e0af;
+                --coral: #ff8074;
+                --line: #29466f;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: radial-gradient(circle at 80% 10%, #173c70 0%, transparent 28%), var(--navy);
+                color: var(--ink);
+                font-family:
+                    Inter,
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                overflow: hidden;
+            }
+            .deck {
+                height: 100vh;
+            }
+            .slide {
+                display: none;
+                min-height: 100vh;
+                padding: clamp(2rem, 6vw, 6rem) clamp(1.5rem, 9vw, 10rem) 6rem;
+                position: relative;
+                justify-content: center;
+                flex-direction: column;
+                gap: 1.4rem;
+            }
+            .slide.active {
+                display: flex;
+            }
+            .eyebrow {
+                color: var(--mint);
+                font-weight: 800;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+            }
+            .kicker {
+                font-size: clamp(1.1rem, 2vw, 1.5rem);
+                color: var(--muted);
+                max-width: 70ch;
+                line-height: 1.6;
+            }
+            h1 {
+                font-size: clamp(3.1rem, 9vw, 8.5rem);
+                line-height: 0.96;
+                margin: 0;
+                letter-spacing: -0.07em;
+            }
+            h2 {
+                font-size: clamp(2.25rem, 5.5vw, 5.6rem);
+                line-height: 1;
+                margin: 0;
+                letter-spacing: -0.06em;
+                max-width: 13ch;
+            }
+            p {
+                font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+                line-height: 1.55;
+                max-width: 70ch;
+                margin: 0;
+            }
+            .accent {
+                color: var(--mint);
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 1rem;
+                max-width: 950px;
+            }
+            .card,
+            .formula,
+            .table-wrap {
+                border: 1px solid var(--line);
+                background: rgba(13, 43, 85, 0.58);
+                border-radius: 18px;
+                padding: 1.25rem;
+            }
+            .card b {
+                display: block;
+                font-size: 1.1rem;
+                margin-bottom: 0.35rem;
+            }
+            .card span {
+                color: var(--muted);
+                line-height: 1.45;
+            }
+            .formula {
+                font:
+                    700 clamp(1.45rem, 3vw, 2.6rem)/1.3 ui-monospace,
+                    SFMono-Regular,
+                    Menlo,
+                    monospace;
+                color: var(--mint);
+                width: max-content;
+                max-width: 100%;
+            }
+            .big-number {
+                font-size: clamp(4.5rem, 15vw, 12rem);
+                font-weight: 850;
+                color: var(--mint);
+                letter-spacing: -0.1em;
+            }
+            .hash-table {
+                display: grid;
+                grid-template-columns: repeat(7, minmax(52px, 1fr));
+                max-width: 800px;
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                overflow: hidden;
+            }
+            .slot {
+                min-height: 112px;
+                padding: 10px;
+                border-right: 1px solid var(--line);
+                position: relative;
+                background: rgba(8, 20, 39, 0.55);
+            }
+            .slot:last-child {
+                border: 0;
+            }
+            .slot small {
+                color: var(--muted);
+            }
+            .chip {
+                position: absolute;
+                bottom: 13px;
+                left: 10px;
+                right: 10px;
+                padding: 0.35rem 0.5rem;
+                border-radius: 7px;
+                background: var(--mint);
+                color: #062116;
+                text-align: center;
+                font-weight: 850;
+            }
+            .chip.coral {
+                background: var(--coral);
+                color: #3c1114;
+            }
+            .chain {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                font-weight: 800;
+                font-size: clamp(1.45rem, 3vw, 2.5rem);
+            }
+            .node {
+                padding: 0.45rem 0.9rem;
+                background: var(--mint);
+                color: #062116;
+                border-radius: 10px;
+            }
+            .arrow {
+                color: var(--muted);
+            }
+            table {
+                border-collapse: collapse;
+                width: min(820px, 100%);
+                font-size: clamp(1rem, 1.8vw, 1.35rem);
+            }
+            th,
+            td {
+                padding: 0.8rem 1rem;
+                text-align: left;
+                border-bottom: 1px solid var(--line);
+            }
+            th {
+                color: var(--mint);
+            }
+            ul,
+            ol {
+                font-size: clamp(1.15rem, 2vw, 1.55rem);
+                line-height: 1.8;
+                margin: 0;
+                padding-left: 1.3em;
+            }
+            .controls {
+                position: fixed;
+                z-index: 4;
+                bottom: 1.35rem;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 0.7rem;
+                align-items: center;
+                background: rgba(3, 10, 23, 0.78);
+                backdrop-filter: blur(12px);
+                border: 1px solid var(--line);
+                padding: 0.5rem;
+                border-radius: 999px;
+            }
+            .controls button {
+                border: 0;
+                border-radius: 999px;
+                background: #17375f;
+                color: var(--ink);
+                font: 700 1rem inherit;
+                padding: 0.62rem 1rem;
+                cursor: pointer;
+            }
+            .controls button:hover {
+                background: var(--mint);
+                color: #062116;
+            }
+            .count {
+                font-variant-numeric: tabular-nums;
+                color: var(--muted);
+                min-width: 4.2rem;
+                text-align: center;
+            }
+            .progress {
+                position: fixed;
+                z-index: 5;
+                top: 0;
+                left: 0;
+                height: 5px;
+                background: var(--mint);
+                transition: width 0.35s;
+            }
+            .notes {
+                position: fixed;
+                right: 1rem;
+                bottom: 1rem;
+                width: min(430px, calc(100vw - 2rem));
+                padding: 1rem 1.15rem;
+                background: #f5fbff;
+                color: #12233b;
+                border-radius: 14px;
+                box-shadow: 0 18px 50px #0008;
+                display: none;
+                z-index: 8;
+                line-height: 1.5;
+            }
+            .notes.show {
+                display: block;
+            }
+            .notes b {
+                color: #146c56;
+            }
+            @media (max-width: 700px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+                .hash-table {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+                .slot {
+                    min-height: 90px;
+                }
+                .slide {
+                    padding-bottom: 7rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="deck">
+            <section
+                class="slide active"
+                data-note="Good day everyone. Today, we are going to learn about hashing, one of the most useful techniques in data structures. Hashing lets us store and retrieve data very quickly. It is used in dictionaries, databases, password systems, and many real-world applications."
+            >
+                <span class="eyebrow">Data structures • lesson</span>
+                <h1>Hashing<br /><span class="accent">in Data Structures</span></h1>
+                <p class="kicker">A fast way to store and find information.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="At the end of this lesson, you should be able to explain what hashing is, how a hash function works, what happens when collisions occur, and why hash tables are efficient."
+            >
+                <span class="eyebrow">01 — Objectives</span>
+                <h2>What you’ll be able to <span class="accent">do</span></h2>
+                <div class="grid">
+                    <div class="card"><b>Define</b><span>Explain hashing in your own words.</span></div>
+                    <div class="card"><b>Calculate</b><span>Use a hash function to find an index.</span></div>
+                    <div class="card"><b>Handle</b><span>Identify collisions and ways to resolve them.</span></div>
+                    <div class="card"><b>Analyze</b><span>Describe hash-table efficiency.</span></div>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="Imagine we have thousands of student records and need to find one specific student. Searching one by one can take a long time. Hashing calculates where the data should be stored."
+            >
+                <span class="eyebrow">02 — The problem</span>
+                <h2>Searching large data can be <span class="accent">slow.</span></h2>
+                <p class="kicker">
+                    Finding one student record among thousands by checking every record is inefficient.
+                </p>
+                <div class="formula">Student ID → calculated location → record</div>
+            </section>
+            <section
+                class="slide"
+                data-note="Hashing converts a key into an index. That index tells us where to store or find data. Instead of checking every item, we jump directly to a possible location."
+            >
+                <span class="eyebrow">03 — Definition</span>
+                <h2>Hashing maps data to a specific <span class="accent">index.</span></h2>
+                <div class="hash-table">
+                    <div class="slot"><small>0</small></div>
+                    <div class="slot"><small>1</small></div>
+                    <div class="slot"><small>2</small></div>
+                    <div class="slot">
+                        <small>3</small>
+                        <div class="chip">key 10</div>
+                    </div>
+                    <div class="slot"><small>4</small></div>
+                    <div class="slot"><small>5</small></div>
+                    <div class="slot"><small>6</small></div>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="A hash table is the data structure that uses hashing. It stores key-value pairs. The key calculates a position, and the value is the information we want."
+            >
+                <span class="eyebrow">04 — Hash table</span>
+                <h2>Store <span class="accent">key–value</span> pairs.</h2>
+                <div class="grid">
+                    <div class="card">
+                        <b>Key</b><span>Student ID<br />e.g., <strong>10</strong></span>
+                    </div>
+                    <div class="card"><b>Hash function</b><span>Finds the table index.</span></div>
+                    <div class="card">
+                        <b>Value</b><span>Student name<br />e.g., <strong>Alex</strong></span>
+                    </div>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="The hash function is the formula used to calculate the index. If the table size is 7, key modulo 7 tells us where the data should be placed."
+            >
+                <span class="eyebrow">05 — Hash function</span>
+                <h2>A formula turns a key into an <span class="accent">index.</span></h2>
+                <div class="formula">h(key) = key mod table_size</div>
+                <p class="kicker">The output is always a valid location in the table.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="If the key is 10 and the table size is 7, compute 10 mod 7. The answer is 3, so the data is stored at index 3."
+            >
+                <span class="eyebrow">06 — Example</span>
+                <h2>Where does key <span class="accent">10</span> go?</h2>
+                <div class="formula">h(10) = 10 mod 7 = 3</div>
+                <div class="big-number">3</div>
+                <p class="kicker">Store the value at index 3.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="Key 10 goes to index 3, key 5 goes to index 5, and key 8 goes to index 1. Hashing decides where each value belongs."
+            >
+                <span class="eyebrow">07 — Inserting values</span>
+                <h2>Calculate, then <span class="accent">place.</span></h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Hash calculation</th>
+                                <th>Index</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>10</td>
+                                <td>10 mod 7</td>
+                                <td>3</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td>5 mod 7</td>
+                                <td>5</td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td>8 mod 7</td>
+                                <td>1</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="Sometimes two different keys produce the same index. This is called a collision. Both 10 and 17 point to index 3, so we need a way to handle it."
+            >
+                <span class="eyebrow">08 — Collision</span>
+                <h2>Two keys. One <span class="accent">index.</span></h2>
+                <div class="formula">10 mod 7 = 3<br />17 mod 7 = 3</div>
+                <p class="kicker">A collision occurs when different keys produce the same index.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="Chaining lets each index hold a list. If multiple keys go to the same index, add them to that list."
+            >
+                <span class="eyebrow">09 — Collision handling</span>
+                <h2>Method 1: <span class="accent">Chaining</span></h2>
+                <p class="kicker">Each table index can point to a list of entries.</p>
+                <div class="chain">
+                    <span class="card">Index 3</span><span class="arrow">→</span><span class="node">10</span
+                    ><span class="arrow">→</span><span class="node">17</span><span class="arrow">→</span
+                    ><span class="node">24</span>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="With open addressing, if the calculated index is occupied, we find another empty position. Linear probing checks the next slot, then the next, until it finds space."
+            >
+                <span class="eyebrow">10 — Collision handling</span>
+                <h2>Method 2: <span class="accent">Open addressing</span></h2>
+                <div class="hash-table">
+                    <div class="slot"><small>0</small></div>
+                    <div class="slot"><small>1</small></div>
+                    <div class="slot"><small>2</small></div>
+                    <div class="slot">
+                        <small>3</small>
+                        <div class="chip">10</div>
+                    </div>
+                    <div class="slot">
+                        <small>4</small>
+                        <div class="chip coral">17</div>
+                    </div>
+                    <div class="slot"><small>5</small></div>
+                    <div class="slot"><small>6</small></div>
+                </div>
+                <p class="kicker">Linear probing: check the next available slot.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="The load factor tells us how full the table is. When the table gets too full, collisions become more common, so hash tables often resize."
+            >
+                <span class="eyebrow">11 — Load factor</span>
+                <h2>How <span class="accent">full</span> is the table?</h2>
+                <div class="formula">Load factor = number of items / table size</div>
+                <p class="kicker">Higher load factor → more collisions → slower performance.</p>
+            </section>
+            <section
+                class="slide"
+                data-note="Hash tables are powerful because inserting, searching, and deleting are usually O(1), or constant time. In the worst case, many collisions can make performance O(n)."
+            >
+                <span class="eyebrow">12 — Efficiency</span>
+                <h2>Usually <span class="accent">fast.</span></h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Operation</th>
+                                <th>Average case</th>
+                                <th>Worst case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Insert</td>
+                                <td>O(1)</td>
+                                <td>O(n)</td>
+                            </tr>
+                            <tr>
+                                <td>Search</td>
+                                <td>O(1)</td>
+                                <td>O(n)</td>
+                            </tr>
+                            <tr>
+                                <td>Delete</td>
+                                <td>O(1)</td>
+                                <td>O(n)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="Hashing is used in many real-world systems. Databases find records quickly, password systems store password hashes more safely, and programming languages use hash tables for dictionaries and maps."
+            >
+                <span class="eyebrow">13 — Applications</span>
+                <h2>Hashing is <span class="accent">everywhere.</span></h2>
+                <div class="grid">
+                    <div class="card"><b>Databases</b><span>Quick record lookup</span></div>
+                    <div class="card"><b>Password storage</b><span>Store password hashes</span></div>
+                    <div class="card"><b>Caches</b><span>Retrieve saved results</span></div>
+                    <div class="card"><b>Dictionaries</b><span>Maps and lookup tables</span></div>
+                    <div class="card"><b>File verification</b><span>Check file integrity</span></div>
+                </div>
+            </section>
+            <section
+                class="slide"
+                data-note="To recap: hashing maps keys to indexes; hash functions calculate positions; collisions share an index; chaining and open addressing handle them; and hash tables are fast on average."
+            >
+                <span class="eyebrow">14 — Recap</span>
+                <h2>The big <span class="accent">idea:</span> speed.</h2>
+                <ul>
+                    <li>Hashing maps keys to indexes.</li>
+                    <li>Hash functions calculate positions.</li>
+                    <li>Collisions share an index.</li>
+                    <li>Chaining and open addressing resolve collisions.</li>
+                    <li>Hash tables are usually O(1).</li>
+                </ul>
+            </section>
+            <section
+                class="slide"
+                data-note="Before we end, answer these questions to check your understanding. They summarize the lesson’s most important points."
+            >
+                <span class="eyebrow">15 — Quick check</span>
+                <h2>Can you answer these?</h2>
+                <ol>
+                    <li>What is hashing?</li>
+                    <li>What is a hash function?</li>
+                    <li>What is a collision?</li>
+                    <li>Name one collision-handling method.</li>
+                    <li>What is the average search time?</li>
+                </ol>
+            </section>
+            <section
+                class="slide"
+                data-note="That ends our lesson on hashing. Remember: instead of searching through every item, we use a hash function to quickly find where data belongs."
+            >
+                <span class="eyebrow">16 — Closing</span>
+                <h1>Find data<br /><span class="accent">faster.</span></h1>
+                <p class="kicker">Hashing uses a formula to quickly find where data belongs.</p>
+            </section>
+        </main>
+        <div class="progress" id="progress"></div>
+        <div class="controls">
+            <button id="prev" aria-label="Previous slide">←</button><span class="count" id="count"></span
+            ><button id="next" aria-label="Next slide">→</button
+            ><button id="notesBtn" aria-label="Toggle presenter notes">Notes</button>
+        </div>
+        <aside class="notes" id="notes">
+            <b>Speaker notes</b>
+            <p id="noteText"></p>
+        </aside>
+        <script>
+            const slides = [...document.querySelectorAll(".slide")];
+            let i = 0;
+            const count = document.querySelector("#count"),
+                bar = document.querySelector("#progress"),
+                note = document.querySelector("#noteText"),
+                panel = document.querySelector("#notes");
+            function show(n) {
+                const total = slides.length
+                i = Math.max(Math.min(n, total), 0)
+                slides.forEach((s, x) => s.classList.toggle("active", x === i));
+                count.textContent = `${i + 1} / ${slides.length}`;
+                bar.style.width = `${((i + 1) / slides.length) * 100}%`;
+                note.textContent = slides[i].dataset.note;
+                history.replaceState(null, "", `#slide-${i + 1}`);
+            }
+            document.querySelector("#prev").onclick = () => show(i - 1);
+            document.querySelector("#next").onclick = () => show(i + 1);
+            document.querySelector("#notesBtn").onclick = () => panel.classList.toggle("show");
+            document.addEventListener("keydown", (e) => {
+                if (["ArrowRight", " ", "PageDown"].includes(e.key)) {
+                    e.preventDefault();
+                    show(i + 1);
+                }
+                if (["ArrowLeft", "PageUp"].includes(e.key)) {
+                    e.preventDefault();
+                    show(i - 1);
+                }
+                if (e.key === "n" || e.key === "N") panel.classList.toggle("show");
+            });
+            show(Math.max(0, (+location.hash.replace("#slide-", "") || 1) - 1));
+        </script>
+    </body>
+</html>

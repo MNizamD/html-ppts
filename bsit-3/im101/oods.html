@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="theme-color" content="#2f3433" />
+        <meta name="description" content="A native HTML slide deck on Object Oriented Databases." />
+        <title>Object Oriented Databases — HTML Slides</title>
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f3433'/%3E%3Cellipse cx='32' cy='20' rx='16' ry='7' fill='%23058aa1'/%3E%3Cpath d='M16 20v23c0 4 7 7 16 7s16-3 16-7V20' fill='none' stroke='%23f4f0e4' stroke-width='5'/%3E%3Cpath d='M16 31c0 4 7 7 16 7s16-3 16-7' fill='none' stroke='%23f4f0e4' stroke-width='4'/%3E%3C/svg%3E"
+        />
+        <style>
+            :root {
+                --paper: #f8f7ee;
+                --ink: #3e403e;
+                --muted: #71736e;
+                --teal: #0087a0;
+                --dark: #403a36;
+                --sage: #9eaea0;
+                --rule: #575b58;
+                --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+                background: #242928;
+                color: var(--ink);
+                font-family: Georgia, "Times New Roman", serif;
+            }
+            button {
+                font: inherit;
+            }
+            .deck {
+                height: 100%;
+                display: grid;
+                place-items: center;
+                padding: clamp(12px, 3vw, 42px);
+                background: radial-gradient(circle at 50% 42%, #59605d 0, #353b39 42%, #1e2221 100%);
+            }
+            .slide {
+                display: none;
+                position: relative;
+                width: min(100%, calc((100vh - clamp(24px, 6vw, 84px)) * 1.7778));
+                aspect-ratio: 16/9;
+                overflow: hidden;
+                background: var(--paper);
+                box-shadow: var(--shadow);
+                padding: 5.3% 8.7% 5%;
+                font-size: clamp(13px, 1.48vw, 25px);
+                line-height: 1.32;
+            }
+            .slide.active {
+                display: block;
+                animation: enter 0.24s ease-out;
+            }
+            .slide::after {
+                content: attr(data-number);
+                position: absolute;
+                right: 3.3%;
+                bottom: 3%;
+                font:
+                    600 0.48em/1 ui-sans-serif,
+                    system-ui;
+                color: #8b8c85;
+                letter-spacing: 0.12em;
+            }
+            .slide.cover::after,
+            .slide.end::after {
+                display: none;
+            }
+            @keyframes enter {
+                from {
+                    opacity: 0;
+                    transform: translateY(6px) scale(0.996);
+                }
+                to {
+                    opacity: 1;
+                    transform: none;
+                }
+            }
+            .slide h2 {
+                font-size: 1.28em;
+                font-weight: 400;
+                margin: 0 0 1.05em;
+                padding-bottom: 0.28em;
+                border-bottom: 3px double var(--rule);
+                letter-spacing: -0.015em;
+            }
+            .slide h3 {
+                font-size: 1.05em;
+                margin: 0.25em 0 0.12em;
+                color: var(--teal);
+                font-weight: 700;
+            }
+            .slide p {
+                margin: 0.25em 0;
+            }
+            .slide ul {
+                margin: 0.25em 0 0.5em;
+                padding-left: 1.35em;
+            }
+            .slide li {
+                margin: 0.2em 0;
+                padding-left: 0.12em;
+            }
+            .slide li::marker {
+                color: var(--teal);
+            }
+            .slide ul ul {
+                font-size: 0.87em;
+                margin-top: 0.1em;
+            }
+            .accent {
+                color: var(--teal);
+                font-weight: 700;
+            }
+            .small {
+                font-size: 0.78em;
+            }
+            .lead {
+                font-size: 1.08em;
+            }
+            .code {
+                font-family: "Courier New", monospace;
+                white-space: pre-wrap;
+                line-height: 1.36;
+                background: rgba(0, 135, 160, 0.055);
+                border-left: 0.25em solid var(--teal);
+                padding: 0.65em 0.85em;
+                margin: 0.55em 0;
+            }
+            .two-col {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 7%;
+                align-items: start;
+            }
+            .center {
+                display: grid;
+                place-items: center;
+                text-align: center;
+                height: 100%;
+            }
+            .note {
+                color: var(--muted);
+                font-style: italic;
+            }
+            .cover {
+                padding: 0;
+                background: var(--paper);
+            }
+            .cover.active {
+                display: grid;
+                grid-template-columns: 43% 57%;
+            }
+            .cover-left {
+                position: relative;
+                padding: 11% 9% 8% 12%;
+                background: linear-gradient(90deg, var(--dark) 0 23%, var(--paper) 23%);
+            }
+            .cover-left::before {
+                content: "";
+                position: absolute;
+                left: 22.5%;
+                top: 0;
+                width: 11%;
+                height: 42%;
+                background: var(--sage);
+                box-shadow: 0 5px 8px rgba(0, 0, 0, 0.18);
+            }
+            .cover .eyebrow {
+                margin-left: 29%;
+                font:
+                    500 0.7em/1.2 ui-sans-serif,
+                    system-ui;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+            }
+            .cover h1 {
+                margin: 6% 0 0 29%;
+                font-size: 2.15em;
+                line-height: 1.02;
+                font-weight: 400;
+                letter-spacing: -0.04em;
+            }
+            .presenter {
+                position: absolute;
+                left: 12%;
+                bottom: 9%;
+                font-size: 0.57em;
+                line-height: 1.55;
+            }
+            .cover-right {
+                display: grid;
+                place-items: center;
+                padding: 12%;
+                background: linear-gradient(180deg, #f7f2dc, #eee4c6);
+            }
+            .database {
+                width: 78%;
+                aspect-ratio: 1.45;
+                position: relative;
+            }
+            .db-stack {
+                position: absolute;
+                right: 5%;
+                top: 17%;
+                width: 34%;
+                height: 68%;
+                border: 5px solid var(--teal);
+                border-radius: 50%/12%;
+                background: linear-gradient(90deg, #057b8e, #16a1b5 48%, #05778a);
+            }
+            .db-stack::before,
+            .db-stack::after {
+                content: "";
+                position: absolute;
+                left: -5px;
+                width: calc(100% + 10px);
+                height: 22%;
+                border: 5px solid var(--teal);
+                border-radius: 50%;
+                background: #1aa8bb;
+            }
+            .db-stack::before {
+                top: -6px;
+            }
+            .db-stack::after {
+                bottom: -6px;
+                background: transparent;
+            }
+            .records {
+                position: absolute;
+                left: 2%;
+                top: 27%;
+                width: 64%;
+                height: 48%;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5%;
+                transform: perspective(400px) rotateY(8deg);
+            }
+            .records span {
+                border: 4px solid var(--teal);
+                background: #bfe5e5;
+                box-shadow: 8px 7px 0 #e4c77f;
+            }
+            .records span:nth-child(4) {
+                grid-column: 2;
+            }
+            .records span:nth-child(5) {
+                grid-column: 3;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 0.5em 0;
+                font-size: 0.78em;
+                text-align: center;
+            }
+            th,
+            td {
+                border: 1px solid #8d918b;
+                padding: 0.42em 0.58em;
+            }
+            th {
+                color: var(--teal);
+                font-weight: 700;
+                background: #f0efe5;
+            }
+            .result-row {
+                display: grid;
+                grid-template-columns: 1.05fr 1fr;
+                gap: 8%;
+                align-items: start;
+            }
+            .comparison {
+                width: 72%;
+                margin: 1.25em auto 0;
+            }
+            .comparison caption {
+                color: var(--teal);
+                margin-bottom: 0.35em;
+            }
+            .comparison td:first-child {
+                border-right: 2px solid #696b67;
+            }
+            .orm {
+                font-size: 0.71em;
+            }
+            .orm > li {
+                margin: 0.34em 0;
+            }
+            .advantage {
+                font-size: 1.04em;
+                line-height: 1.38;
+            }
+            .end {
+                font-size: clamp(38px, 7vw, 110px);
+            }
+            .end span {
+                font-weight: 400;
+                letter-spacing: -0.05em;
+            }
+            .controls {
+                position: fixed;
+                left: 50%;
+                bottom: 14px;
+                transform: translateX(-50%);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 7px 9px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 999px;
+                background: rgba(18, 22, 21, 0.82);
+                backdrop-filter: blur(12px);
+                color: white;
+                z-index: 10;
+                opacity: 0.5;
+                transition: 0.2s;
+            }
+            .controls:hover,
+            .controls:focus-within {
+                opacity: 1;
+            }
+            .controls button {
+                width: 36px;
+                height: 36px;
+                border: 0;
+                border-radius: 50%;
+                background: transparent;
+                color: white;
+                cursor: pointer;
+                font-size: 22px;
+                line-height: 1;
+            }
+            .controls button:hover {
+                background: rgba(255, 255, 255, 0.12);
+            }
+            .controls button:disabled {
+                opacity: 0.28;
+            }
+            .counter {
+                min-width: 58px;
+                text-align: center;
+                font:
+                    600 12px/1 ui-sans-serif,
+                    system-ui;
+                letter-spacing: 0.08em;
+            }
+            .progress {
+                position: fixed;
+                left: 0;
+                bottom: 0;
+                height: 4px;
+                background: var(--teal);
+                width: 4.166%;
+                transition: width 0.2s;
+                z-index: 9;
+            }
+            .help {
+                position: fixed;
+                right: 18px;
+                bottom: 17px;
+                color: #d4d9d6;
+                font:
+                    12px/1.3 ui-sans-serif,
+                    system-ui;
+                opacity: 0.55;
+            }
+            .fullscreen {
+                font-size: 15px !important;
+            }
+            @media (max-width: 700px) {
+                .deck {
+                    padding: 8px;
+                }
+                .slide {
+                    font-size: clamp(8px, 2.25vw, 16px);
+                    padding: 5.3% 7.5% 5%;
+                }
+                .controls {
+                    bottom: 10px;
+                }
+                .help {
+                    display: none;
+                }
+                .cover h1 {
+                    font-size: 1.85em;
+                }
+                .presenter {
+                    font-size: 0.5em;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .slide.active {
+                    animation: none;
+                }
+                .progress {
+                    transition: none;
+                }
+            }
+        </style>
+        <style>
+            .monogram {
+                text-align: center;
+                color: var(--teal);
+            }
+            .monogram strong {
+                display: block;
+                font:
+                    800 3.4em/1 ui-sans-serif,
+                    system-ui;
+                letter-spacing: -0.08em;
+            }
+            .monogram span {
+                display: block;
+                margin-top: 1em;
+                font:
+                    0.64em/1.4 ui-sans-serif,
+                    system-ui;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: #646a67;
+            }
+        </style>
+    </head>
+    <body>
+        <main class="deck" aria-label="Object Oriented Databases presentation">
+            <section class="slide cover" data-title="Object Oriented Database">
+                <div class="cover-left">
+                    <div class="eyebrow">Topic</div>
+                    <h1>Object Oriented<br />Database</h1>
+                    <!-- <div class="presenter">
+                        <strong>Presented by</strong><br />Muhammad Nizam M. Datumaong<br />Student of C.S.E<br />hasan15-11743@diu.edu.bd<br />Daffodil
+                        International University<br />Dhaka, Bangladesh
+                    </div> -->
+                </div>
+                <div class="cover-right" aria-hidden="true">
+                    <div class="monogram"><strong>OODB</strong><span>objects · identity · persistence</span></div>
+                </div>
+            </section>
+            <section class="slide" data-title="Presentation Outline">
+                <h2>Presentation Outline</h2>
+                <ul class="lead">
+                    <li>Object definitions</li>
+                    <li>Object structures</li>
+                    <li>Object-oriented concepts</li>
+                    <li>Object-oriented databases</li>
+                    <li>Object Query Language (OQL), with example</li>
+                    <li>Object-oriented SQL</li>
+                    <li>Advantages of OODBMS</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Definition of an Object">
+                <h2>Definition of an Object</h2>
+                <h3>Object: a user-defined complex data type</h3>
+                <ul>
+                    <li>An object has a state (variables) and methods (behavior or operations).</li>
+                </ul>
+                <h3>An object has four defining characteristics</h3>
+                <ul>
+                    <li><strong>Identifier:</strong> a system-wide unique ID for the object</li>
+                    <li><strong>Name:</strong> an optional unique database name</li>
+                    <li><strong>Lifetime:</strong> persistent or transient</li>
+                    <li><strong>Structure:</strong> construction through a type constructor</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Object Structure">
+                <h2>Object Structure</h2>
+                <ul>
+                    <li>
+                        The state of a complex object may be constructed from other objects or values through a type
+                        constructor.
+                    </li>
+                    <li>
+                        An object can be represented as <span class="accent">(I, C, V)</span>
+                        <ul>
+                            <li><strong>I</strong> is a unique ID</li>
+                            <li><strong>C</strong> is a type constructor</li>
+                            <li><strong>V</strong> is the object state</li>
+                        </ul>
+                    </li>
+                    <li><strong>Basic types:</strong> atom, tuple, and set</li>
+                    <li><strong>Collection types:</strong> list, bag, and array</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Object Oriented Concepts">
+                <h2>Object Oriented Concepts</h2>
+                <h3>Abstract data types</h3>
+                <p class="small">Class definitions extend the database with complex attribute types.</p>
+                <h3>Encapsulation</h3>
+                <p class="small">Implementation details for operations and object structure remain hidden.</p>
+                <h3>Inheritance</h3>
+                <p class="small">Data and behavior can be shared through a hierarchy, supporting code reuse.</p>
+                <h3>Polymorphism</h3>
+                <p class="small">The same operator can support multiple types through overloading.</p>
+            </section>
+            <section class="slide" data-title="Object Oriented Database">
+                <h2>Object Oriented Database</h2>
+                <h3>Abstract data types</h3>
+                <ul>
+                    <li>A database system that incorporates the important object-oriented concepts.</li>
+                </ul>
+                <h3>Additional features</h3>
+                <ul>
+                    <li>Unique object identifiers</li>
+                    <li>Persistent object handling</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Object Query Language">
+                <h2>Object Query Language (OQL)</h2>
+                <ul class="lead">
+                    <li>Declarative query language</li>
+                    <li>Not computationally complete</li>
+                    <li>
+                        SQL-based syntax using <span class="accent">SELECT</span>, <span class="accent">FROM</span>, and
+                        <span class="accent">WHERE</span>
+                    </li>
+                    <li>Supports user-defined operators and types</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Example of OQL">
+                <h2>Example of OQL</h2>
+                <p>The following query asks: <em>“What are the names of the black products?”</em></p>
+                <div class="code">SELECT DISTINCT p.name FROM Products p WHERE p.color = 'Black';</div>
+                <p class="note small">
+                    The syntax is valid in SQL and OQL, but each language returns a different type of result.
+                </p>
+            </section>
+            <section class="slide" data-title="Result of the Query (SQL)">
+                <h2>Result of the Query (SQL)</h2>
+                <div class="result-row">
+                    <div>
+                        <h3>Original table</h3>
+                        <table>
+                            <tr>
+                                <th>Product No.</th>
+                                <th>Name</th>
+                                <th>Color</th>
+                            </tr>
+                            <tr>
+                                <td>P1</td>
+                                <td>Ford Mustang</td>
+                                <td>Black</td>
+                            </tr>
+                            <tr>
+                                <td>P2</td>
+                                <td>Toyota Celica</td>
+                                <td>Green</td>
+                            </tr>
+                            <tr>
+                                <td>P3</td>
+                                <td>Mercedes SLK</td>
+                                <td>Black</td>
+                            </tr>
+                        </table>
+                        <h3>Result</h3>
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                            </tr>
+                            <tr>
+                                <td>Ford Mustang</td>
+                            </tr>
+                            <tr>
+                                <td>Mercedes SLK</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <ul>
+                        <li>The statement queries a relational database.</li>
+                        <li>SQL returns a table containing rows.</li>
+                    </ul>
+                </div>
+            </section>
+            <section class="slide" data-title="Result of the Query (OQL)">
+                <h2>Result of the Query (OQL)</h2>
+                <div class="result-row">
+                    <div>
+                        <h3>Original table</h3>
+                        <table>
+                            <tr>
+                                <th>Product No.</th>
+                                <th>Name</th>
+                                <th>Color</th>
+                            </tr>
+                            <tr>
+                                <td>P1</td>
+                                <td>Ford Mustang</td>
+                                <td>Black</td>
+                            </tr>
+                            <tr>
+                                <td>P2</td>
+                                <td>Toyota Celica</td>
+                                <td>Green</td>
+                            </tr>
+                            <tr>
+                                <td>P3</td>
+                                <td>Mercedes SLK</td>
+                                <td>Black</td>
+                            </tr>
+                        </table>
+                        <h3>Result</h3>
+                        <table>
+                            <tr>
+                                <th>String</th>
+                                <th>String</th>
+                            </tr>
+                            <tr>
+                                <td>Ford Mustang</td>
+                                <td>Mercedes SLK</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <ul>
+                        <li>The statement queries an object-oriented database.</li>
+                        <li>OQL returns a collection of objects.</li>
+                    </ul>
+                </div>
+            </section>
+            <section class="slide" data-title="Comparison">
+                <h2>Comparison</h2>
+                <ul>
+                    <li>SQL and OQL queries often look very similar. Sometimes the syntax is identical.</li>
+                    <li>The result types, however, are different.</li>
+                </ul>
+                <table class="comparison">
+                    <caption>
+                        Query returns
+                    </caption>
+                    <tr>
+                        <th>OQL</th>
+                        <th>SQL</th>
+                    </tr>
+                    <tr>
+                        <td>Object</td>
+                        <td>Tuple</td>
+                    </tr>
+                    <tr>
+                        <td>Collection of objects</td>
+                        <td>Table</td>
+                    </tr>
+                </table>
+            </section>
+            <section class="slide" data-title="Object Oriented SQL — SQL3">
+                <h2>Object Oriented SQL — SQL3</h2>
+                <ul>
+                    <li>Foundation for object-oriented database systems such as Oracle8 and DB2.</li>
+                    <li>Combines relational and object-oriented features.</li>
+                    <li>
+                        <strong>Relational features:</strong> new data types and predicates, enhanced semantics, added
+                        security, and active database behavior.
+                    </li>
+                    <li><strong>Object-oriented features:</strong> support for functions and procedures.</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="User Defined Datatypes">
+                <h2>User Defined Datatypes</h2>
+                <p>Creating a <span class="accent">row type</span>:</p>
+                <div class="code">
+                    CREATE ROW TYPE AddressType ( street CHAR(50), city CHAR(20) ); CREATE ROW TYPE StarType ( name
+                    CHAR(30), address AddressType );
+                </div>
+            </section>
+            <section class="slide" data-title="Creating Data Types">
+                <h2>Creating Data Types</h2>
+                <p>Creating tables from the row types:</p>
+                <div class="code">
+                    CREATE TABLE Address OF TYPE AddressType; CREATE TABLE MovieStar OF TYPE StarType;
+                </div>
+                <ul>
+                    <li>Instances of row types become tuples in a table.</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Sample Query">
+                <h2>Sample Query</h2>
+                <p>Find the names and street addresses of movie stars who live in Columbus:</p>
+                <div class="code">
+                    SELECT MovieStar.name, MovieStar.address.street FROM MovieStar WHERE MovieStar.address.city =
+                    'Columbus';
+                </div>
+            </section>
+            <section class="slide" data-title="Complex Data & Queries">
+                <h2>Complex Data &amp; Queries</h2>
+                <h3>A water resource management example</h3>
+                <ul>
+                    <li>A statewide database of water projects</li>
+                    <li>A library of picture slides</li>
+                    <li>Predefined concept indexing can be prohibitively expensive</li>
+                </ul>
+                <h3>Typical queries</h3>
+                <ul>
+                    <li>Geographic locations</li>
+                    <li>Reservoir levels during droughts</li>
+                    <li>Recent flood conditions</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Addressing Complex Queries">
+                <h2>Complex Data &amp; Queries</h2>
+                <h3>Addressing these queries</h3>
+                <ul>
+                    <li>Link the database to landmarks on a topographic map.</li>
+                    <li>Examine the caption for each slide.</li>
+                    <li>Implement image understanding programs.</li>
+                    <li>Inspect images and determine their attributes.</li>
+                </ul>
+                <p class="accent">These queries require dedicated methods.</p>
+            </section>
+            <section class="slide" data-title="Creating Function">
+                <h2>Creating Function</h2>
+                <div class="code">CREATE FUNCTION one() RETURNS INT AS 'SELECT 1 AS result' LANGUAGE SQL;</div>
+                <p>Calling the function:</p>
+                <div class="code">SELECT one() AS answer;</div>
+                <table style="width: 28%; margin-left: auto">
+                    <tr>
+                        <th>Answer</th>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                    </tr>
+                </table>
+            </section>
+            <section class="slide" data-title="Creating Table & Methods">
+                <h2>Creating “Table” &amp; “Methods”</h2>
+                <h3>Implementation</h3>
+                <div class="code small">
+                    CREATE TABLE slides ( id INT, date DATE, caption DOCUMENT, picture CD_IMAGE, METHOD
+                    containsName(name VARCHAR) RETURNS BOOLEAN AS EXTERNAL NAME 'matching' LANGUAGE C );
+                </div>
+            </section>
+            <section class="slide" data-title="Implementation">
+                <h2>Implementation</h2>
+                <p>Find a picture of a reservoir with a low water level located in Sacramento:</p>
+                <div class="code">
+                    SELECT slides P, landmark L WHERE isLowWaterLevel(P.picture) AND P.containsName(L.name) AND L.name =
+                    'Sacramento';
+                </div>
+            </section>
+            <section class="slide" data-title="Object-Relational Mapping">
+                <h2>Object-Relational Mapping</h2>
+                <ul class="orm">
+                    <li>
+                        <span class="accent">Object-Relational Mapping (ORM)</span> systems sit on top of traditional
+                        relational databases.
+                        <ul>
+                            <li>The implementor maps objects to relations.</li>
+                            <li>Objects are transient and have no permanent object identity.</li>
+                            <li>The system fetches relational data and constructs objects.</li>
+                            <li>Updates generate corresponding insert, update, or delete statements.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span class="accent">Hibernate ORM</span> is widely used.
+                        <ul>
+                            <li>Its API manages transactions and retrieves objects.</li>
+                            <li>Its query language operates on the object model, then translates queries to SQL.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Limitation:</strong> mapping adds overhead, especially for bulk updates.</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Advantages of OODBMS">
+                <h2>Advantages of OODBMS</h2>
+                <ul class="advantage">
+                    <li>Designers can specify both object structure and behavior through methods.</li>
+                    <li>Object-oriented languages such as Java and C++ integrate more naturally.</li>
+                    <li>The database supports complex and user-defined types.</li>
+                    <li>Encapsulation keeps operations together with the data they use.</li>
+                </ul>
+            </section>
+            <section class="slide" data-title="Water Resource Management Example">
+                <h2>Water Resource Management Example</h2>
+                <div class="two-col">
+                    <div>
+                        <h3>Database</h3>
+                        <ul>
+                            <li>Statewide water projects</li>
+                            <li>Library of picture slides</li>
+                            <li>Topographic landmarks</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>Queries</h3>
+                        <ul>
+                            <li>Geographic locations</li>
+                            <li>Reservoir levels during droughts</li>
+                            <li>Recent flood conditions</li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="note" style="margin-top: 2em">
+                    Dedicated object methods make complex image and location queries practical.
+                </p>
+            </section>
+            <section class="slide end" data-title="Thank you">
+                <div class="center"><span>Thank you</span></div>
+            </section>
+        </main>
+        <div class="controls" aria-label="Slide controls">
+            <button id="prev" aria-label="Previous slide">‹</button><span class="counter" id="counter">01 / 24</span
+            ><button id="next" aria-label="Next slide">›</button
+            ><button class="fullscreen" id="fullscreen" aria-label="Toggle fullscreen">⛶</button>
+        </div>
+        <div class="progress" id="progress"></div>
+        <div class="help">← → navigate · F fullscreen</div>
+        <script>
+            const slides = [...document.querySelectorAll(".slide")],
+                total = slides.length;
+            let current = 0;
+            const counter = document.getElementById("counter"),
+                progress = document.getElementById("progress"),
+                prev = document.getElementById("prev"),
+                next = document.getElementById("next");
+            function show(index) {
+                current = Math.max(0, Math.min(total - 1, index));
+                slides.forEach((slide, i) => {
+                    slide.classList.toggle("active", i === current);
+                    slide.setAttribute("aria-hidden", i === current ? "false" : "true");
+                    slide.dataset.number = String(i + 1).padStart(2, "0");
+                });
+                counter.textContent = `${String(current + 1).padStart(2, "0")} / ${total}`;
+                progress.style.width = `${((current + 1) / total) * 100}%`;
+                prev.disabled = current === 0;
+                next.disabled = current === total - 1;
+                document.title = `${slides[current].dataset.title} — HTML Slides`;
+                history.replaceState(null, "", `#${current + 1}`);
+            }
+            prev.onclick = () => show(current - 1);
+            next.onclick = () => show(current + 1);
+            document.getElementById("fullscreen").onclick = () =>
+                document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+            document.addEventListener("keydown", (e) => {
+                if (["ArrowRight", "PageDown", " "].includes(e.key)) {
+                    e.preventDefault();
+                    show(current + 1);
+                }
+                if (["ArrowLeft", "PageUp"].includes(e.key)) {
+                    e.preventDefault();
+                    show(current - 1);
+                }
+                if (e.key === "Home") show(0);
+                if (e.key === "End") show(total - 1);
+                if (e.key.toLowerCase() === "f") document.getElementById("fullscreen").click();
+            });
+            let startX = 0;
+            document.addEventListener("touchstart", (e) => (startX = e.changedTouches[0].clientX), { passive: true });
+            document.addEventListener(
+                "touchend",
+                (e) => {
+                    const delta = e.changedTouches[0].clientX - startX;
+                    if (Math.abs(delta) > 55) show(current + (delta < 0 ? 1 : -1));
+                },
+                { passive: true },
+            );
+            const initial = parseInt(location.hash.slice(1), 10) - 1;
+            show(Number.isInteger(initial) && initial >= 0 ? initial : 0);
+        </script>
+    </body>
+</html>
