@@ -3,12 +3,216 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Document</title>
+        <title>HTML Files</title>
+        <style>
+            * { box-sizing: border-box; }
+
+            body {
+                margin: 0;
+                font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+                line-height: 1.6;
+                color: #1f2937;
+                background: #f8fafc;
+            }
+
+            /* Hide the content until unlocked */
+            [hidden] { display: none !important; }
+
+            /* --- Password gate --- */
+            #gate {
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                padding: 1.5rem;
+            }
+
+            #gate form {
+                width: 100%;
+                max-width: 22rem;
+                background: #fff;
+                padding: 2rem;
+                border-radius: 0.75rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+                text-align: center;
+            }
+
+            #gate h1 {
+                margin: 0 0 1.25rem;
+                font-size: 1.25rem;
+            }
+
+            #pw {
+                width: 100%;
+                padding: 0.65rem 0.75rem;
+                font-size: 1rem;
+                border: 1px solid #cbd5e1;
+                border-radius: 0.5rem;
+            }
+
+            #pw:focus {
+                outline: 2px solid #2563eb;
+                outline-offset: 1px;
+                border-color: #2563eb;
+            }
+
+            #gate button {
+                width: 100%;
+                margin-top: 0.75rem;
+                padding: 0.65rem;
+                font-size: 1rem;
+                font-weight: 600;
+                color: #fff;
+                background: #2563eb;
+                border: 0;
+                border-radius: 0.5rem;
+                cursor: pointer;
+            }
+
+            #gate button:hover { background: #1d4ed8; }
+
+            #error {
+                min-height: 1.2em;
+                margin: 0.75rem 0 0;
+                font-size: 0.875rem;
+                color: #dc2626;
+            }
+
+            /* --- Content --- */
+            main {
+                max-width: 46rem;
+                margin: 0 auto;
+                padding: 2.5rem 1.5rem;
+            }
+
+            main h1 { margin-top: 0; }
+
+            /* Nested list styling */
+            .file-tree,
+            .file-tree ul {
+                list-style: none;
+                margin: 0;
+                padding-left: 1.1rem;
+                border-left: 2px solid #e2e8f0;
+            }
+
+            .file-tree { padding-left: 0; border-left: 0; }
+
+            .file-tree li {
+                position: relative;
+                padding: 0.2rem 0;
+                padding-left: 1.1rem;
+            }
+
+            .file-tree li::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 1.05em;
+                width: 0.8rem;
+                height: 2px;
+                background: #e2e8f0;
+            }
+
+            .file-tree > li::before { display: none; }
+
+            .file-tree > li { padding-left: 0; }
+
+            .folder { font-weight: 600; }
+
+            .file-tree a {
+                color: #2563eb;
+                text-decoration: none;
+            }
+
+            .file-tree a:hover { text-decoration: underline; }
+        </style>
     </head>
     <body>
-        <h1>HTML Files</h1>
-        <ul>
-            <a href="./bsit-2/cc104/hashing.html"><li>Hashing</li></a>
-        </ul>
+        <!-- ===== Password gate ===== -->
+        <div id="gate">
+            <form id="gate-form">
+                <h1>🔒 Enter password</h1>
+                <label for="pw" class="sr-only"></label>
+                <input
+                    type="password"
+                    id="pw"
+                    placeholder="Password"
+                    autocomplete="current-password"
+                    required
+                />
+                <button type="submit">Unlock</button>
+                <p id="error" role="alert"></p>
+            </form>
+        </div>
+
+        <!-- ===== Protected content ===== -->
+        <main id="content" hidden>
+            <h1>HTML Files</h1>
+
+            <ul class="file-tree">
+                <li>
+                    <span class="folder">bsit-2</span>
+                    <ul>
+                        <li>
+                            <span class="folder">cc104</span>
+                            <ul>
+                                <li>
+                                    <a href="./bsit-2/cc104/hashing.html">Hashing</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <span class="folder">bsit-3</span>
+                    <ul>
+                        <li>
+                            <span class="folder">im101</span>
+                            <ul>
+                                <li><a href="./bsit-3/im101/oods.html">Object Oriented Database System</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </main>
+
+        <script>
+            // ⚠️ Change this to your password
+            const PASSWORD = "ppt";
+
+            const gate = document.getElementById("gate");
+            const content = document.getElementById("content");
+            const form = document.getElementById("gate-form");
+            const input = document.getElementById("pw");
+            const error = document.getElementById("error");
+
+            function unlock() {
+                gate.hidden = true;
+                content.hidden = false;
+                input.value = "";
+            }
+
+            // Skip the prompt if already unlocked this session.
+            // Remove this block if you want it to ask on every reload.
+            // if (sessionStorage.getItem("unlocked") === "yes") {
+            //     unlock();
+            // } else {
+                input.focus();
+            // }
+
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+
+                if (input.value === PASSWORD) {
+                    sessionStorage.setItem("unlocked", "yes");
+                    unlock();
+                } else {
+                    error.textContent = "Wrong password. Try again.";
+                    input.value = "";
+                    input.focus();
+                }
+            });
+        </script>
     </body>
 </html>
