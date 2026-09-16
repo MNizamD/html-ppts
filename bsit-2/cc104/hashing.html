@@ -216,6 +216,33 @@
             th {
                 color: var(--mint);
             }
+            pre {
+                width: min(82cqw, 100%);
+                max-height: 63cqw;
+                margin: 0;
+                padding: 1.3cqw 1.5cqw;
+                overflow: auto;
+                border: 1px solid var(--line);
+                border-radius: 1.2cqw;
+                background: #020812;
+                color: #e9f5ff;
+                font:
+                    600 1.02cqw/1.45 ui-monospace,
+                    SFMono-Regular,
+                    Menlo,
+                    Consolas,
+                    monospace;
+            }
+            code {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            }
+            .code-slide {
+                gap: 1cqw;
+            }
+            .code-slide h2 {
+                font-size: 3.5cqw;
+                max-width: 20ch;
+            }
             ul,
             ol {
                 font-size: 2cqw;
@@ -430,10 +457,11 @@
             </section>
             <section
                 class="slide"
-                data-note="Chaining lets each index hold a list. If multiple keys go to the same index, add them to that list."
+                data-note="Open hashing is another term for chaining. It lets each index hold a list. If multiple keys go to the same index, add them to that list."
             >
                 <span class="eyebrow">09 — Collision handling</span>
-                <h2>Method 1: <span class="accent">Chaining</span></h2>
+                <h2>Method 1: <span class="accent">Open hashing</span></h2>
+                <p class="kicker">Also called chaining.</p>
                 <p class="kicker">Each table index can point to a list of entries.</p>
                 <div class="chain">
                     <span class="card">Index 3</span><span class="arrow">→</span><span class="node">10</span
@@ -442,11 +470,94 @@
                 </div>
             </section>
             <section
-                class="slide"
-                data-note="With open addressing, if the calculated index is occupied, we find another empty position. Linear probing checks the next slot, then the next, until it finds space."
+                class="slide code-slide"
+                data-note="This Java version of open hashing stores a linked list at each index. The set method first checks whether the key already exists. If it does, the value is updated. If not, a new entry is added to the chain."
             >
-                <span class="eyebrow">10 — Collision handling</span>
-                <h2>Method 2: <span class="accent">Open addressing</span></h2>
+                <span class="eyebrow">10 — Java: open hashing</span>
+                <h2>Open hashing stores a <span class="accent">chain</span> per index.</h2>
+                <pre><code>import java.util.LinkedList;
+
+class HashTableOpenHashing {
+    private static class Entry {
+        int key;
+        String value;
+
+        Entry(int key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    private LinkedList&lt;Entry&gt;[] table;
+    private int size;
+
+    @SuppressWarnings("unchecked")
+    public HashTableOpenHashing(int size) {
+        this.size = size;
+        table = new LinkedList[size];
+
+        for (int i = 0; i &lt; size; i++) {
+            table[i] = new LinkedList&lt;&gt;();
+        }
+    }
+
+    private int hashFunction(int key) {
+        return key % size;
+    }
+
+    public void set(int key, String value) {
+        int index = hashFunction(key);
+
+        for (Entry entry : table[index]) {
+            if (entry.key == key) {
+                entry.value = value;
+                return;
+            }
+        }
+
+        table[index].add(new Entry(key, value));
+    }
+
+    public String get(int key) {
+        int index = hashFunction(key);
+
+        for (Entry entry : table[index]) {
+            if (entry.key == key) {
+                return entry.value;
+            }
+        }
+
+        return null;
+    }
+}</code></pre>
+            </section>
+            <section
+                class="slide code-slide"
+                data-note="Here is how to test open hashing. Keys 10, 17, and 24 all hash to index 3, but get returns the correct value because the program checks the stored key before returning the stored value."
+            >
+                <span class="eyebrow">11 — Test: open hashing</span>
+                <h2>The key check prevents <span class="accent">wrong returns.</span></h2>
+                <pre><code>public class Main {
+    public static void main(String[] args) {
+        HashTableOpenHashing table = new HashTableOpenHashing(7);
+
+        table.set(10, "Ava");
+        table.set(17, "Ben");
+        table.set(24, "Chen");
+
+        System.out.println(table.get(10)); // Ava
+        System.out.println(table.get(17)); // Ben
+        System.out.println(table.get(24)); // Chen
+    }
+}</code></pre>
+            </section>
+            <section
+                class="slide"
+                data-note="Closed hashing is another term for open addressing. If the calculated index is occupied, we find another empty position inside the same table. Linear probing checks the next slot, then the next, until it finds space."
+            >
+                <span class="eyebrow">12 — Collision handling</span>
+                <h2>Method 2: <span class="accent">Closed hashing</span></h2>
+                <p class="kicker">Also called open addressing.</p>
                 <div class="hash-table">
                     <div class="slot"><small>0</small></div>
                     <div class="slot"><small>1</small></div>
@@ -465,10 +576,98 @@
                 <p class="kicker">Linear probing: check the next available slot.</p>
             </section>
             <section
+                class="slide code-slide"
+                data-note="This Java version of closed hashing keeps entries directly in the array. If the original index is occupied, set tries the next index. The get method follows the same probing path and only returns a value when the stored key matches."
+            >
+                <span class="eyebrow">13 — Java: closed hashing</span>
+                <h2>Closed hashing probes for another <span class="accent">slot.</span></h2>
+                <pre><code>class HashTableClosedHashing {
+    private static class Entry {
+        int key;
+        String value;
+
+        Entry(int key, String value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    private Entry[] table;
+    private int size;
+
+    public HashTableClosedHashing(int size) {
+        this.size = size;
+        table = new Entry[size];
+    }
+
+    private int hashFunction(int key) {
+        return key % size;
+    }
+
+    public void set(int key, String value) {
+        int index = hashFunction(key);
+
+        for (int i = 0; i &lt; size; i++) {
+            int newIndex = (index + i) % size;
+
+            if (table[newIndex] == null) {
+                table[newIndex] = new Entry(key, value);
+                return;
+            }
+
+            if (table[newIndex].key == key) {
+                table[newIndex].value = value;
+                return;
+            }
+        }
+
+        System.out.println("Hash table is full.");
+    }
+
+    public String get(int key) {
+        int index = hashFunction(key);
+
+        for (int i = 0; i &lt; size; i++) {
+            int newIndex = (index + i) % size;
+
+            if (table[newIndex] == null) {
+                return null;
+            }
+
+            if (table[newIndex].key == key) {
+                return table[newIndex].value;
+            }
+        }
+
+        return null;
+    }
+}</code></pre>
+            </section>
+            <section
+                class="slide code-slide"
+                data-note="Here is how to test closed hashing. The first key is stored at index 3. The second key also wants index 3, so it moves to index 4. The third key moves to index 5. Lookup still works because get repeats the same probing sequence."
+            >
+                <span class="eyebrow">14 — Test: closed hashing</span>
+                <h2>Lookup repeats the same <span class="accent">probe path.</span></h2>
+                <pre><code>public class Main {
+    public static void main(String[] args) {
+        HashTableClosedHashing table = new HashTableClosedHashing(7);
+
+        table.set(10, "Ava");   // index 3
+        table.set(17, "Ben");   // index 4
+        table.set(24, "Chen");  // index 5
+
+        System.out.println(table.get(10)); // Ava
+        System.out.println(table.get(17)); // Ben
+        System.out.println(table.get(24)); // Chen
+    }
+}</code></pre>
+            </section>
+            <section
                 class="slide"
                 data-note="The load factor tells us how full the table is. When the table gets too full, collisions become more common, so hash tables often resize."
             >
-                <span class="eyebrow">11 — Load factor</span>
+                <span class="eyebrow">15 — Load factor</span>
                 <h2>How <span class="accent">full</span> is the table?</h2>
                 <div class="formula">Load factor = number of items / table size</div>
                 <p class="kicker">Higher load factor → more collisions → slower performance.</p>
@@ -477,7 +676,7 @@
                 class="slide"
                 data-note="Hash tables are powerful because inserting, searching, and deleting are usually O(1), or constant time. In the worst case, many collisions can make performance O(n)."
             >
-                <span class="eyebrow">12 — Efficiency</span>
+                <span class="eyebrow">16 — Efficiency</span>
                 <h2>Usually <span class="accent">fast.</span></h2>
                 <div class="table-wrap">
                     <table>
@@ -512,7 +711,7 @@
                 class="slide"
                 data-note="Hashing is used in many real-world systems. Databases find records quickly, password systems store password hashes more safely, and programming languages use hash tables for dictionaries and maps."
             >
-                <span class="eyebrow">13 — Applications</span>
+                <span class="eyebrow">17 — Applications</span>
                 <h2>Hashing is <span class="accent">everywhere.</span></h2>
                 <div class="grid">
                     <div class="card"><b>Databases</b><span>Quick record lookup</span></div>
@@ -524,15 +723,16 @@
             </section>
             <section
                 class="slide"
-                data-note="To recap: hashing maps keys to indexes; hash functions calculate positions; collisions share an index; chaining and open addressing handle them; and hash tables are fast on average."
+                data-note="To recap: hashing maps keys to indexes; hash functions calculate positions; collisions share an index; open hashing, also called chaining, and closed hashing, also called open addressing, handle them; and hash tables are fast on average."
             >
-                <span class="eyebrow">14 — Recap</span>
+                <span class="eyebrow">18 — Recap</span>
                 <h2>The big <span class="accent">idea:</span> speed.</h2>
                 <ul>
                     <li>Hashing maps keys to indexes.</li>
                     <li>Hash functions calculate positions.</li>
                     <li>Collisions share an index.</li>
-                    <li>Chaining and open addressing resolve collisions.</li>
+                    <li>Open hashing/chaining stores collisions in lists.</li>
+                    <li>Closed hashing/open addressing probes for another slot.</li>
                     <li>Hash tables are usually O(1).</li>
                 </ul>
             </section>
@@ -540,7 +740,7 @@
                 class="slide"
                 data-note="Before we end, answer these questions to check your understanding. They summarize the lesson’s most important points."
             >
-                <span class="eyebrow">15 — Quick check</span>
+                <span class="eyebrow">19 — Quick check</span>
                 <h2>Can you answer these?</h2>
                 <ol>
                     <li>What is hashing?</li>
@@ -554,7 +754,7 @@
                 class="slide"
                 data-note="That ends our lesson on hashing. Remember: instead of searching through every item, we use a hash function to quickly find where data belongs."
             >
-                <span class="eyebrow">16 — Closing</span>
+                <span class="eyebrow">20 — Closing</span>
                 <h1>Find data<br /><span class="accent">faster.</span></h1>
                 <p class="kicker">Hashing uses a formula to quickly find where data belongs.</p>
             </section>
@@ -580,7 +780,7 @@
                 panel = document.querySelector("#notes");
             function show(n) {
                 const total = slides.length;
-                i = Math.max(Math.min(n, total), 0);
+                i = Math.max(Math.min(n, total - 1), 0);
                 slides.forEach((s, x) => s.classList.toggle("active", x === i));
                 count.textContent = `${i + 1} / ${slides.length}`;
                 bar.style.width = `${((i + 1) / slides.length) * 100}%`;
