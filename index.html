@@ -15,7 +15,6 @@
                 background: #f8fafc;
             }
 
-            /* Hide the content until unlocked */
             [hidden] { display: none !important; }
 
             /* --- Password gate --- */
@@ -36,10 +35,7 @@
                 text-align: center;
             }
 
-            #gate h1 {
-                margin: 0 0 1.25rem;
-                font-size: 1.25rem;
-            }
+            #gate h1 { margin: 0 0 1.25rem; font-size: 1.25rem; }
 
             #pw {
                 width: 100%;
@@ -149,38 +145,101 @@
         <main id="content" hidden>
             <h1>HTML Files</h1>
 
-            <ul class="file-tree">
-                <li>
-                    <span class="folder">bsit-2</span>
-                    <ul>
-                        <li>
-                            <span class="folder">cc104</span>
-                            <ul>
-                                <li>
-                                    <a href="./bsit-2/cc104/hashing.html">Hashing</a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </li>
-                <li>
-                    <span class="folder">bsit-3</span>
-                    <ul>
-                        <li>
-                            <span class="folder">im101</span>
-                            <ul>
-                                <li><a href="./bsit-3/im101/oods.html">Object Oriented Database System</a></li>
-                            </ul>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
+            <!-- The tree is built by JavaScript from FILE_TREE below -->
+            <ul class="file-tree" id="file-tree"></ul>
         </main>
 
         <script>
             // ⚠️ Change this to your password
             const PASSWORD = "ppt";
 
+            /* ---------------------------------------------------------
+               1. Your file data
+               - Folder  -> nested object
+               - File    -> "Label": "href"
+               - A folder may also be an array of files:
+                     "cc104": ["hashing.html"]
+                     "cc104": [{ name: "Hashing", href: "hashing.html" }]
+               --------------------------------------------------------- */
+            const FILE_TREE = {
+                "bsit-2": {
+                    "cc104": {
+                        "Hashing": "./bsit-2/cc104/hashing.html"
+                    }
+                },
+                "bsit-3": {
+                    "im101": {
+                        "Object Oriented Database System": "./bsit-3/im101/oods.html"
+                    }
+                },
+                "bsit-4":{
+                    "sa101": {
+                        "Deadlocks": "./bsit-4/sa101/deadlocks.html"
+                    }
+                }
+            };
+
+            /* -------------------- 2. Tree renderer -------------------- */
+            function makeLink(name, href) {
+                const a = document.createElement("a");
+                a.href = href;
+                a.textContent = name;
+                return a;
+            }
+
+            // "path/to/my-file.html" -> "my file"
+            function prettyName(path) {
+                const base = String(path).split("/").pop() || String(path);
+                return base.replace(/\.html?$/i, "").replace(/[-_]+/g, " ");
+            }
+
+            // ["a.html", { name, href }] -> { "a": "a.html", name: href }
+            function listToMap(list) {
+                const map = {};
+                for (const item of list) {
+                    if (typeof item === "string") {
+                        map[prettyName(item)] = item;
+                    } else if (item && item.href) {
+                        map[item.name || prettyName(item.href)] = item.href;
+                    }
+                }
+                return map;
+            }
+
+            function renderTree(data, isRoot = false) {
+                const ul = document.createElement("ul");
+                if (isRoot) ul.className = "file-tree";
+
+                for (const [name, value] of Object.entries(data)) {
+                    if (value == null) continue;
+
+                    const li = document.createElement("li");
+
+                    if (typeof value === "string") {
+                        // Leaf: a file link
+                        li.appendChild(makeLink(name, value));
+                    } else {
+                        // Branch: a folder
+                        const folder = document.createElement("span");
+                        folder.className = "folder";
+                        folder.textContent = name;
+                        li.appendChild(folder);
+
+                        const children = Array.isArray(value) ? listToMap(value) : value;
+                        li.appendChild(renderTree(children));
+                    }
+
+                    ul.appendChild(li);
+                }
+
+                return ul;
+            }
+
+            /* -------------------- 3. Mount the tree -------------------- */
+            const mount = document.getElementById("file-tree");
+            mount.replaceWith(renderTree(FILE_TREE, true));
+
+            /* -------------------- Password gate -------------------- */
             const gate = document.getElementById("gate");
             const content = document.getElementById("content");
             const form = document.getElementById("gate-form");
