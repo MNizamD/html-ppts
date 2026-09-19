@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Deadlocks in Operating Systems</title>
+        <style>
+            :root {
+                --ink: #17202a;
+                --paper: #fffdf7;
+                --red: #c5483e;
+                --blue: #315f8c;
+                --gold: #e6b85c;
+                --muted: #6f746f;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: #171a1d;
+                color: var(--ink);
+                font-family: Georgia, "Times New Roman", serif;
+            }
+            .deck {
+                height: 100%;
+                display: grid;
+                place-items: center;
+                padding: 18px;
+            }
+            .slide {
+                position: absolute;
+                width: min(94vw, calc(90vh * 16 / 9));
+                aspect-ratio: 16/9;
+                display: none;
+                overflow: hidden;
+                padding: 5.2% 6%;
+                background: var(--paper);
+                box-shadow: 0 22px 80px #0009;
+            }
+            .slide.active {
+                display: block;
+            }
+            .slide::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                opacity: 0.16;
+                pointer-events: none;
+                background-image: linear-gradient(#d8d4c8 1px, transparent 1px);
+                background-size: 100% 34px;
+            }
+            .slide::after {
+                content: attr(data-number);
+                position: absolute;
+                right: 3.2%;
+                bottom: 2.5%;
+                font:
+                    700 15px/1 Arial,
+                    sans-serif;
+                color: #8b8f8b;
+            }
+            .content {
+                position: relative;
+                z-index: 1;
+                height: 100%;
+            }
+            h1,
+            h2,
+            h3,
+            p,
+            ul {
+                margin-top: 0;
+            }
+            h1 {
+                font-size: clamp(42px, 5.4vw, 76px);
+                line-height: 1.02;
+                letter-spacing: -0.035em;
+            }
+            h2 {
+                font-size: clamp(30px, 3.5vw, 50px);
+                margin-bottom: 4%;
+                line-height: 1.05;
+            }
+            h2::after {
+                content: "";
+                display: block;
+                width: 80px;
+                height: 5px;
+                margin-top: 14px;
+                background: var(--red);
+                transform: rotate(-1deg);
+            }
+            h3 {
+                font:
+                    700 clamp(17px, 1.8vw, 27px)/1.15 Arial,
+                    sans-serif;
+                color: var(--blue);
+            }
+            p,
+            li {
+                font-size: clamp(16px, 1.72vw, 26px);
+                line-height: 1.38;
+            }
+            ul {
+                padding-left: 1.2em;
+            }
+            li {
+                margin: 0.5em 0;
+                font-size: medium;
+            }
+            strong {
+                color: var(--red);
+            }
+            .eyebrow {
+                color: var(--red);
+                text-transform: uppercase;
+                letter-spacing: 0.16em;
+                font:
+                    700 clamp(12px, 1.1vw, 17px)/1 Arial,
+                    sans-serif;
+                margin-bottom: 18px;
+            }
+            .subtitle {
+                max-width: 72%;
+                color: #505955;
+                font-size: clamp(18px, 2.1vw, 31px);
+            }
+            .cover {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .cover .school {
+                position: absolute;
+                top: 0;
+                left: 0;
+                font:
+                    700 clamp(13px, 1.2vw, 18px)/1.4 Arial,
+                    sans-serif;
+                color: var(--blue);
+                text-transform: uppercase;
+                letter-spacing: 0.09em;
+            }
+            .cover .meta {
+                position: absolute;
+                left: 0;
+                bottom: 2%;
+                font:
+                    600 clamp(13px, 1.2vw, 18px)/1.7 Arial,
+                    sans-serif;
+            }
+            .cover .ring {
+                position: absolute;
+                width: 29%;
+                aspect-ratio: 1;
+                border: 16px solid var(--red);
+                border-radius: 50%;
+                right: 5%;
+                top: 22%;
+                opacity: 0.13;
+            }
+            .grid2 {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 5%;
+                align-items: center;
+            }
+            .grid43 {
+                display: grid;
+                grid-template-columns: 1.25fr 0.75fr;
+                gap: 4%;
+                align-items: center;
+            }
+            .sketch {
+                width: 100%;
+                max-height: 58vh;
+                object-fit: contain;
+                border: 1px solid #d8d1c4;
+                box-shadow: 7px 8px 0 #d8d1c4;
+                transform: rotate(0.25deg);
+            }
+            .quote {
+                font-size: clamp(24px, 3vw, 44px);
+                line-height: 1.24;
+            }
+            .note {
+                color: var(--muted);
+                font-size: clamp(14px, 1.35vw, 20px);
+            }
+            .four {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 3.2%;
+            }
+            .item {
+                padding: 2.4% 3%;
+                border-left: 5px solid var(--gold);
+                background: #fffaf0cc;
+            }
+            .item:nth-child(2n) {
+                border-color: var(--blue);
+            }
+            .item p {
+                font-size: clamp(14px, 1.35vw, 20px);
+                margin-bottom: 0;
+            }
+            .steps {
+                counter-reset: steps;
+                display: grid;
+                gap: 2.2%;
+            }
+            .step {
+                counter-increment: steps;
+                display: grid;
+                grid-template-columns: 52px 1fr;
+                gap: 18px;
+                align-items: start;
+            }
+            .step::before {
+                content: counter(steps);
+                width: 45px;
+                height: 45px;
+                display: grid;
+                place-items: center;
+                border: 3px solid var(--red);
+                border-radius: 50%;
+                color: var(--red);
+                font:
+                    800 22px/1 Arial,
+                    sans-serif;
+                transform: rotate(-3deg);
+            }
+            .step p {
+                margin: 0.2em 0 0;
+            }
+            .matrix {
+                width: 100%;
+                border-collapse: collapse;
+                font-family: Arial, sans-serif;
+                background: #fffdf8d9;
+            }
+            .matrix th,
+            .matrix td {
+                padding: 13px 15px;
+                border-bottom: 2px solid #ded8cb;
+                text-align: left;
+                font-size: clamp(13px, 1.2vw, 18px);
+            }
+            .matrix th {
+                color: var(--blue);
+            }
+            .formula {
+                margin-top: 3%;
+                text-align: center;
+                font:
+                    700 clamp(18px, 2vw, 29px)/1.2 Arial,
+                    sans-serif;
+                color: var(--red);
+            }
+            .safe-layout {
+                display: grid;
+                grid-template-columns: 1.35fr 0.65fr;
+                gap: 4%;
+                align-items: start;
+            }
+            .safe-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #fffdf8e8;
+                font-family: Arial, sans-serif;
+            }
+            .safe-table th,
+            .safe-table td {
+                padding: 10px 12px;
+                border-bottom: 2px solid #ded8cb;
+                text-align: center;
+                font-size: clamp(12px, 1.05vw, 17px);
+            }
+            .safe-table th {
+                color: var(--blue);
+            }
+            .safe-table tbody tr {
+                transition:
+                    background 180ms ease,
+                    color 180ms ease;
+            }
+            .safe-table tbody tr.current {
+                background: #fff0c8;
+            }
+            .safe-table tbody tr.finished {
+                background: #e6f2e7;
+                color: #426146;
+            }
+            .safe-panel {
+                padding: 7% 8%;
+                background: #fffaf0d9;
+                border-left: 5px solid var(--gold);
+                font-family: Arial, sans-serif;
+            }
+            .safe-panel h3 {
+                margin-bottom: 8px;
+            }
+            .available-vector {
+                margin: 4px 0 18px;
+                color: var(--red);
+                font:
+                    700 clamp(22px, 2.4vw, 34px)/1.1 Arial,
+                    sans-serif;
+            }
+            .safe-message {
+                min-height: 4.4em;
+                margin-bottom: 14px;
+                font-size: clamp(13px, 1.15vw, 18px);
+                line-height: 1.35;
+            }
+            .safe-controls {
+                display: flex;
+                gap: 8px;
+            }
+            .safe-controls button {
+                background: var(--blue);
+                color: white;
+                font-weight: 700;
+            }
+            .safe-controls button:last-child {
+                background: #6f746f;
+            }
+            .safe-sequence {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                margin-top: 4%;
+                font:
+                    700 clamp(16px, 1.6vw, 24px)/1 Arial,
+                    sans-serif;
+            }
+            .safe-sequence span {
+                padding: 9px 14px;
+                border: 3px solid #b9b4a9;
+                border-radius: 50%;
+                color: #7d817d;
+                transition: all 180ms ease;
+            }
+            .safe-sequence span.done {
+                border-color: var(--blue);
+                background: #e6f0f8;
+                color: var(--blue);
+                transform: rotate(-2deg);
+            }
+            .safe-sequence b {
+                color: #b9b4a9;
+            }
+            .detect-layout {
+                display: grid;
+                grid-template-columns: 1.15fr 0.85fr;
+                gap: 5%;
+                align-items: center;
+            }
+            .detect-image {
+                width: 100%;
+                max-height: 52vh;
+                object-fit: contain;
+                border: 1px solid #d8d1c4;
+                box-shadow: 7px 8px 0 #d8d1c4;
+                filter: grayscale(1);
+                opacity: 0.48;
+                transition:
+                    filter 240ms ease,
+                    opacity 240ms ease,
+                    transform 240ms ease;
+            }
+            .detect-image.detected {
+                filter: none;
+                opacity: 1;
+                transform: rotate(-0.3deg);
+            }
+            .detect-panel,
+            .recovery-panel {
+                padding: 7% 8%;
+                background: #fffaf0d9;
+                border-left: 5px solid var(--gold);
+                font-family: Arial, sans-serif;
+            }
+            .detect-result,
+            .recovery-result {
+                min-height: 5em;
+                margin-bottom: 16px;
+                font-size: clamp(14px, 1.25vw, 19px);
+                line-height: 1.4;
+            }
+            .action-button {
+                background: var(--blue);
+                color: white;
+                font-weight: 700;
+            }
+            .recovery-layout {
+                display: grid;
+                grid-template-columns: 1fr 0.9fr;
+                gap: 5%;
+                align-items: start;
+            }
+            .process-chain {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 11px;
+                margin: 5% 0;
+                font:
+                    700 clamp(17px, 2vw, 29px)/1 Arial,
+                    sans-serif;
+            }
+            .process-chain span {
+                padding: 16px 18px;
+                border: 4px solid var(--red);
+                border-radius: 50%;
+                background: #fff8ef;
+                transition:
+                    opacity 180ms ease,
+                    transform 180ms ease,
+                    border-color 180ms ease;
+            }
+            .process-chain span.removed {
+                opacity: 0.25;
+                transform: scale(0.78);
+                border-color: #8b8f8b;
+                text-decoration: line-through;
+            }
+            .process-chain b {
+                color: var(--red);
+            }
+            .process-chain.resolved b {
+                color: #8b8f8b;
+                opacity: 0.35;
+            }
+            .recovery-buttons {
+                display: grid;
+                gap: 8px;
+            }
+            .recovery-buttons button {
+                width: 100%;
+                background: var(--blue);
+                color: white;
+                text-align: left;
+                font-weight: 700;
+            }
+            .recovery-buttons button:last-child {
+                background: #6f746f;
+            }
+            .resource-release {
+                color: var(--blue);
+                font-weight: 700;
+            }
+            .controls {
+                position: fixed;
+                z-index: 20;
+                left: 50%;
+                bottom: 16px;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                padding: 8px 11px;
+                background: #090b0dc7;
+                border: 1px solid #ffffff24;
+                border-radius: 999px;
+                color: white;
+                font:
+                    600 13px/1 Arial,
+                    sans-serif;
+            }
+            button {
+                border: 0;
+                background: #ffffff18;
+                color: #fff;
+                padding: 8px 11px;
+                border-radius: 999px;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #ffffff2c;
+            }
+            .notes {
+                display: none;
+                position: fixed;
+                z-index: 15;
+                right: 18px;
+                top: 18px;
+                width: min(420px, 42vw);
+                max-height: calc(100vh - 100px);
+                overflow: auto;
+                padding: 20px;
+                color: #f3f3ef;
+                background: #111417ef;
+                border: 1px solid #ffffff22;
+                box-shadow: 0 16px 50px #0008;
+                font:
+                    16px/1.5 Arial,
+                    sans-serif;
+            }
+            .notes.show {
+                display: block;
+            }
+            .speaker {
+                display: none;
+            }
+            .notes h3 {
+                color: #f0bd62;
+                font-size: 17px;
+            }
+            .notes p {
+                font:
+                    15px/1.55 Arial,
+                    sans-serif;
+            }
+            @media (max-width: 800px) {
+                .slide {
+                    padding: 6%;
+                }
+                .grid2,
+                .grid43 {
+                    grid-template-columns: 1fr;
+                }
+                .sketch {
+                    max-height: 31vh;
+                }
+                .four {
+                    gap: 2%;
+                }
+                .item {
+                    padding: 2%;
+                }
+                .controls {
+                    bottom: 8px;
+                }
+                .notes {
+                    width: calc(100vw - 36px);
+                }
+                .safe-layout {
+                    grid-template-columns: 1fr;
+                    gap: 3%;
+                }
+                .safe-panel {
+                    padding: 3% 4%;
+                }
+                .detect-layout,
+                .recovery-layout {
+                    grid-template-columns: 1fr;
+                    gap: 3%;
+                }
+                .detect-image {
+                    max-height: 29vh;
+                }
+            }
+            @media print {
+                @page {
+                    size: landscape;
+                    margin: 0;
+                }
+                html,
+                body {
+                    overflow: visible;
+                    background: white;
+                }
+                .deck {
+                    display: block;
+                    padding: 0;
+                }
+                .slide {
+                    display: block !important;
+                    position: relative;
+                    width: 100vw;
+                    height: 100vh;
+                    box-shadow: none;
+                    break-after: page;
+                }
+                .controls,
+                .notes {
+                    display: none !important;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main class="deck">
+            <section class="slide active" data-number="01">
+                <div class="content cover">
+                    <div class="school">S.S. Jain Subodh P.G. Mahila Mahavidyalaya<br />Jaipur, Rajasthan</div>
+                    <div class="eyebrow">Operating Systems</div>
+                    <h1>Deadlocks</h1>
+                    <p class="subtitle">When processes wait for resources that can never become available</p>
+                    <div class="ring"></div>
+                    <div class="meta">Presented by: Priyanka Saini<br />Under the guidance of: Mrs. Nikita Gupta</div>
+                </div>
+                <aside class="speaker">Explanation will be shown here. :)</aside>
+            </section>
+
+            <section class="slide" data-number="02">
+                <div class="content">
+                    <h2>Deadlock State</h2>
+                    <div class="grid43">
+                        <div>
+                            <p class="quote">
+                                A set of processes becomes permanently blocked because each process is waiting for a
+                                resource held by another.
+                            </p>
+                            <p class="note">No process can move forward unless the cycle is broken.</p>
+                        </div>
+                        <img
+                            class="sketch"
+                            src="./deadlock_two_processes_handdrawn.png"
+                            alt="Hand-drawn two-process deadlock diagram"
+                        />
+                    </div>
+                </div>
+                <aside class="speaker">
+                    A deadlock occurs when a group of processes becomes permanently blocked. Each process holds at least
+                    one resource while waiting for another resource held by a different process. In this example, P1 and
+                    P2 each hold one resource and request the other. Neither can continue because each waits for the
+                    other to release its resource.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="03">
+                <div class="content">
+                    <h2>Necessary Conditions for Deadlock</h2>
+                    <div class="four">
+                        <div class="item">
+                            <h3>Mutual Exclusion</h3>
+                            <p>Only one process can use a particular resource at a time.</p>
+                        </div>
+                        <div class="item">
+                            <h3>Hold and Wait</h3>
+                            <p>A process holds resources while requesting additional ones.</p>
+                        </div>
+                        <div class="item">
+                            <h3>No Preemption</h3>
+                            <p>A resource must be released voluntarily by its holder.</p>
+                        </div>
+                        <div class="item">
+                            <h3>Circular Wait</h3>
+                            <p>Each process waits for a resource held by the next process in a cycle.</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    Four conditions must exist at the same time for a deadlock to occur: mutual exclusion, hold and
+                    wait, no preemption, and circular wait. If the system eliminates any one of these conditions, it
+                    prevents deadlock.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="04">
+                <div class="content">
+                    <h2>Resource Allocation Graph</h2>
+                    <div class="grid2">
+                        <div>
+                            <p>
+                                A Resource Allocation Graph, or RAG, shows which resources processes hold and which
+                                resources they request.
+                            </p>
+                            <ul>
+                                <li><strong>Circle:</strong> process</li>
+                                <li><strong>Rectangle:</strong> resource type</li>
+                                <li><strong>Process to resource:</strong> request edge</li>
+                                <li><strong>Resource to process:</strong> assignment edge</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="quote">A cycle signals circular waiting.</p>
+                            <p class="note">With one instance of each resource type, a cycle confirms deadlock.</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    A resource allocation graph represents the relationship between processes and resources. In standard
+                    notation, circles represent processes and rectangles represent resource types. A request edge points
+                    from a process to a resource. An assignment edge points from a resource to a process. A cycle is an
+                    important warning sign.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="05">
+                <div class="content">
+                    <h2>Resource Allocation Graph</h2>
+                    <img
+                        class="sketch"
+                        style="height: 72%; display: block; margin: auto"
+                        src="./resource_allocation_graph_handdrawn.png"
+                        alt="Hand-drawn resource allocation graph showing a deadlock cycle"
+                    />
+                </div>
+                <aside class="speaker">
+                    Follow the direction of the arrows. R1 is assigned to P1, which requests R2. R2 is assigned to P2,
+                    which requests R1. The chain returns to its starting point. Since each resource has one instance,
+                    this closed cycle represents a deadlock.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="06">
+                <div class="content">
+                    <h2>Deadlock Handling</h2>
+                    <div class="steps">
+                        <div class="step">
+                            <div>
+                                <h3>Prevention</h3>
+                                <p>Stop any one of the necessary <strong>4 conditions</strong> from occurring.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div>
+                                <h3>Avoidance</h3>
+                                <p>Grant a request only when the system remains in a safe state.</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div>
+                                <h3>Detection and Recovery</h3>
+                                <p>Allow deadlock, detect it, then break the cycle.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="note" style="margin-top: 4%">
+                        <strong>Safe state:</strong> at least one completion sequence exists. An unsafe state creates
+                        risk, but does not automatically mean a deadlock already exists.
+                    </p>
+                </div>
+                <aside class="speaker">
+                    Operating systems handle deadlocks in three main ways. Prevention removes one necessary condition.
+                    Avoidance checks whether each allocation leaves the system safe. Detection and recovery allows
+                    deadlocks to occur, finds them, and then takes corrective action.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="07">
+                <div class="content">
+                    <h2>Deadlock Prevention Methods</h2>
+                    <p>Prevent the following:</p>
+                    <div class="grid2">
+                        <div class="item">
+                            <h3>Mutual Exclusion</h3>
+                            <p>
+                                Some resources, such as printers, cannot be shared. Eliminating this condition is often
+                                impractical.
+                            </p>
+                        </div>
+                        <div class="item">
+                            <h3>Hold and Wait</h3>
+                            <p>
+                                Require a process to request every needed resource before it begins, or allow requests
+                                only when it holds none.
+                            </p>
+                        </div>
+                    </div>
+                    <p class="quote" style="margin-top: 7%">The tradeoff is lower resource utilization.</p>
+                </div>
+                <aside class="speaker">
+                    Some resources cannot be shared, so mutual exclusion is unavoidable. Hold and wait can be removed by
+                    requiring all resources up front or requiring a process to hold none when making a request. These
+                    approaches prevent deadlock but can leave resources reserved and unused.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="08">
+                <div class="content">
+                    <h2>Deadlock Prevention Methods</h2>
+                    <p>Prevent the following:</p>
+                    <div class="grid2">
+                        <div class="item">
+                            <h3>No Preemption</h3>
+                            <p>
+                                Take a resource from one process when another process needs it, provided the resource
+                                state can be saved and restored safely.
+                            </p>
+                        </div>
+                        <div class="item">
+                            <h3>Circular Wait</h3>
+                            <p>
+                                Give resource types a fixed order and require every process to request them in
+                                increasing order.
+                            </p>
+                        </div>
+                    </div>
+                    <p class="quote" style="margin-top: 7%">
+                        A shared request order makes a circular chain impossible.
+                    </p>
+                </div>
+                <aside class="speaker">
+                    The no-preemption condition can be addressed by taking a resource away and later restoring the
+                    affected process. Circular wait can be prevented by numbering resource types and requiring every
+                    process to request them in the same increasing order.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="09">
+                <div class="content">
+                    <h2>Deadlock Avoidance: Banker’s Algorithm</h2>
+                    <div class="steps">
+                        <div class="step">
+                            <div><p>Each process declares its maximum possible resource demand.</p></div>
+                        </div>
+                        <div class="step">
+                            <div><p>The system temporarily tests a new request.</p></div>
+                        </div>
+                        <div class="step">
+                            <div><p>If a safe completion sequence remains, the system grants the request.</p></div>
+                        </div>
+                        <div class="step">
+                            <div><p>If the state would become unsafe, the request waits.</p></div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    Banker’s algorithm applies when resource types have multiple instances. Each process states its
+                    maximum demand. Before granting a request, the system simulates the allocation. It grants the
+                    request only when at least one safe sequence remains.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="10">
+                <div class="content">
+                    <h2>Safe State Example</h2>
+                    <div class="safe-layout">
+                        <table class="safe-table" aria-label="Banker's Algorithm safe-state example">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Process</th>
+                                    <th colspan="3">Max</th>
+                                    <th colspan="3">Allocated</th>
+                                    <th colspan="3">Need</th>
+                                </tr>
+                                <tr>
+                                    <th>A</th>
+                                    <th>B</th>
+                                    <th>C</th>
+                                    <th>A</th>
+                                    <th>B</th>
+                                    <th>C</th>
+                                    <th>A</th>
+                                    <th>B</th>
+                                    <th>C</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-safe-row="0">
+                                    <th>P1</th>
+                                    <td>2</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>0</td>
+                                    <td>0</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                </tr>
+                                <tr data-safe-row="1">
+                                    <th>P2</th>
+                                    <td>1</td>
+                                    <td>2</td>
+                                    <td>1</td>
+                                    <td>0</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>0</td>
+                                </tr>
+                                <tr data-safe-row="2">
+                                    <th>P3</th>
+                                    <td>3</td>
+                                    <td>1</td>
+                                    <td>2</td>
+                                    <td>1</td>
+                                    <td>1</td>
+                                    <td>0</td>
+                                    <td>2</td>
+                                    <td>0</td>
+                                    <td>2</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="safe-panel">
+                            <h3>Available A, B, C</h3>
+                            <div class="available-vector" id="safeAvailable">[1, 1, 2]</div>
+                            <p class="safe-message" id="safeMessage" aria-live="polite">
+                                P1 can finish because Need [1, 1, 1] is no greater than Available [1, 1, 2].
+                            </p>
+                            <div class="safe-controls">
+                                <button type="button" id="safeNext">Next process</button
+                                ><button type="button" id="safeReset">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="safe-sequence" aria-label="Safe sequence">
+                        <span data-safe-node="0">P1</span><b>→</b><span data-safe-node="1">P2</span><b>→</b
+                        ><span data-safe-node="2">P3</span>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    This example has three resource types: A, B, and C. Need equals Max minus Allocation. We begin with
+                    Available equal to one, one, and two. P1 can finish first because its need does not exceed what is
+                    available. When P1 finishes, it releases its allocation, so Available becomes two, one, and two. P2
+                    can then finish and release its resources, giving two, two, and three. Finally, P3 can finish.
+                    Because the sequence P1, P2, P3 allows every process to complete, the system is in a safe state.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="11">
+                <div class="content">
+                    <h2>Data Structures for Banker’s Algorithm</h2>
+                    <table class="matrix">
+                        <tr>
+                            <th>Structure</th>
+                            <th>Size</th>
+                            <th>Meaning</th>
+                        </tr>
+                        <tr>
+                            <td>Available</td>
+                            <td>M</td>
+                            <td>Currently available instances of each resource type</td>
+                        </tr>
+                        <tr>
+                            <td>Max</td>
+                            <td>N × M</td>
+                            <td>Maximum demand of every process</td>
+                        </tr>
+                        <tr>
+                            <td>Allocation</td>
+                            <td>N × M</td>
+                            <td>Resources currently assigned to every process</td>
+                        </tr>
+                        <tr>
+                            <td>Need</td>
+                            <td>N × M</td>
+                            <td>Resources each process may still require</td>
+                        </tr>
+                        <tr>
+                            <td>Request</td>
+                            <td>N × M</td>
+                            <td>Pending requests from all processes</td>
+                        </tr>
+                    </table>
+                    <div class="formula">Need = Max − Allocation</div>
+                </div>
+                <aside class="speaker">
+                    Let N be the number of processes and M the number of resource types. Available records free
+                    resources. Max records each process’s maximum demand. Allocation records current assignments. Need
+                    equals Max minus Allocation. Request records pending resource requests. Together, these structures
+                    let the system test whether a safe sequence exists.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="12">
+                <div class="content">
+                    <h2>Deadlock Detection</h2>
+                    <div class="detect-layout">
+                        <img
+                            id="detectGraph"
+                            class="detect-image"
+                            src="./deadlock_detection_wait_for_graph_handdrawn.png"
+                            alt="Hand-drawn wait-for graph showing P1 waiting for P2, P2 waiting for P3, and P3 waiting for P1"
+                        />
+                        <div class="detect-panel">
+                            <h3>Wait-for Graph Check</h3>
+                            <p class="detect-result" id="detectResult" aria-live="polite">
+                                Follow the directed edges and check whether they return to the starting process.
+                            </p>
+                            <button type="button" class="action-button" id="detectButton">Run detection</button>
+                        </div>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    A wait-for graph contains only process nodes. An arrow from one process to another means the first
+                    process waits for a resource held by the second. Here, P1 waits for P2, P2 waits for P3, and P3
+                    waits for P1. The path returns to its starting point, so the graph contains a cycle and the system
+                    has detected a deadlock.
+                </aside>
+            </section>
+
+            <section class="slide" data-number="13">
+                <div class="content">
+                    <h2>Recovery from Deadlock</h2>
+                    <div class="recovery-layout">
+                        <div>
+                            <div class="process-chain" id="recoveryChain" aria-label="Deadlocked process cycle">
+                                <span data-recovery-process="P1">P1</span><b>→</b
+                                ><span data-recovery-process="P2">P2</span><b>→</b
+                                ><span data-recovery-process="P3">P3</span><b>→</b><span>P1</span>
+                            </div>
+                            <div class="recovery-panel">
+                                <h3 id="recoveryTitle">Deadlock still exists</h3>
+                                <p class="recovery-result" id="recoveryResult" aria-live="polite">
+                                    Choose a recovery method to break the circular wait.
+                                </p>
+                                <p class="resource-release" id="resourceRelease">Resources released: none</p>
+                            </div>
+                        </div>
+                        <div class="recovery-buttons">
+                            <button type="button" id="terminateP3">Terminate P3</button>
+                            <button type="button" id="preemptR1">Preempt R1 from P1</button>
+                            <button type="button" id="rollbackP2">Roll back P2</button>
+                            <button type="button" id="resetRecovery">Reset demonstration</button>
+                        </div>
+                    </div>
+                </div>
+                <aside class="speaker">
+                    After detecting the cycle, the operating system must choose a victim. Terminating P3 releases all
+                    resources held by P3 and immediately breaks the cycle. Preemption temporarily removes a suitable
+                    resource from a selected process and reallocates it, although the victim may need to restart.
+                    Rollback returns a process to an earlier checkpoint, releases its later allocations, and allows the
+                    remaining processes to continue. Recovery breaks the deadlock, but it can lose work or delay a
+                    process.
+                </aside>
+            </section>
+            <section class="slide" data-number="12">
+                <div style="display: flex; justify-items: center; align-items: center; height: 100%">
+                    <h1 style="margin: auto">Thank You.</h1>
+                </div>
+                <aside class="speaker">End of slide. :)</aside>
+            </section>
+        </main>
+
+        <div class="notes" id="notes">
+            <h3>Notes</h3>
+            <p id="noteText"></p>
+        </div>
+        <nav class="controls" aria-label="Presentation controls">
+            <button id="prev" aria-label="Previous slide">←</button><span id="counter">1 / 11</span
+            ><button id="next" aria-label="Next slide">→</button><button id="noteBtn">Notes</button
+            ><button id="fullBtn">Full screen</button>
+        </nav>
+        <script>
+            const slides = [...document.querySelectorAll(".slide")],
+                counter = document.getElementById("counter"),
+                notes = document.getElementById("notes"),
+                noteText = document.getElementById("noteText");
+            let index = 0;
+            function show(n) {
+                // index = (n + slides.length) % slides.length;
+                index = Math.max(0, Math.min(slides.length - 1, n));
+                slides.forEach((s, i) => s.classList.toggle("active", i === index));
+                counter.textContent = `${index + 1} / ${slides.length}`;
+                noteText.textContent = slides[index].querySelector(".speaker").textContent;
+            }
+            document.getElementById("prev").onclick = () => show(index - 1);
+            document.getElementById("next").onclick = () => show(index + 1);
+            document.getElementById("noteBtn").onclick = () => {
+                notes.classList.toggle("show");
+                noteText.textContent = slides[index].querySelector(".speaker").textContent;
+            };
+            document.getElementById("fullBtn").onclick = () => document.documentElement.requestFullscreen?.();
+            const detectGraph = document.getElementById("detectGraph");
+            const detectResult = document.getElementById("detectResult");
+            document.getElementById("detectButton").onclick = () => {
+                detectGraph.classList.add("detected");
+                detectResult.innerHTML =
+                    "<strong>Deadlock detected.</strong><br>P1 → P2 → P3 → P1 forms a directed cycle.";
+            };
+            const recoveryChain = document.getElementById("recoveryChain");
+            const recoveryTitle = document.getElementById("recoveryTitle");
+            const recoveryResult = document.getElementById("recoveryResult");
+            const resourceRelease = document.getElementById("resourceRelease");
+            function resetRecovery() {
+                recoveryChain.classList.remove("resolved");
+                document
+                    .querySelectorAll("[data-recovery-process]")
+                    .forEach((node) => node.classList.remove("removed"));
+                recoveryTitle.textContent = "Deadlock still exists";
+                recoveryResult.textContent = "Choose a recovery method to break the circular wait.";
+                resourceRelease.textContent = "Resources released: none";
+            }
+            function applyRecovery(method) {
+                resetRecovery();
+                recoveryChain.classList.add("resolved");
+                recoveryTitle.textContent = "Cycle broken: system can continue";
+                if (method === "terminate") {
+                    document.querySelector('[data-recovery-process="P3"]').classList.add("removed");
+                    recoveryResult.textContent =
+                        "P3 is terminated. Its resources return to the available pool, so P2 can finish and then P1 can continue.";
+                    resourceRelease.textContent = "Resources released: all resources held by P3";
+                } else if (method === "preempt") {
+                    document.querySelector('[data-recovery-process="P1"]').classList.add("removed");
+                    recoveryResult.textContent =
+                        "R1 is temporarily taken from P1 and assigned where it is needed. P1 waits or restarts after the other process finishes.";
+                    resourceRelease.textContent = "Resource moved: R1 from P1";
+                } else if (method === "rollback") {
+                    document.querySelector('[data-recovery-process="P2"]').classList.add("removed");
+                    recoveryResult.textContent =
+                        "P2 returns to an earlier checkpoint and releases its later allocations. The circular wait disappears.";
+                    resourceRelease.textContent = "Resources released: allocations made after P2's checkpoint";
+                }
+            }
+            document.getElementById("terminateP3").addEventListener("click", () => applyRecovery("terminate"));
+            document.getElementById("preemptR1").addEventListener("click", () => applyRecovery("preempt"));
+            document.getElementById("rollbackP2").addEventListener("click", () => applyRecovery("rollback"));
+            document.getElementById("resetRecovery").addEventListener("click", resetRecovery);
+            const safeSteps = [
+                { process: "P1", need: "[1, 1, 1]", allocation: "[1, 0, 0]", before: "[1, 1, 2]", after: "[2, 1, 2]" },
+                { process: "P2", need: "[1, 1, 0]", allocation: "[0, 1, 1]", before: "[2, 1, 2]", after: "[2, 2, 3]" },
+                { process: "P3", need: "[2, 0, 2]", allocation: "[1, 1, 0]", before: "[2, 2, 3]", after: "[3, 3, 3]" },
+            ];
+            let safeStep = 0;
+            const safeRows = [...document.querySelectorAll("[data-safe-row]")];
+            const safeNodes = [...document.querySelectorAll("[data-safe-node]")];
+            const safeAvailable = document.getElementById("safeAvailable");
+            const safeMessage = document.getElementById("safeMessage");
+            const safeNext = document.getElementById("safeNext");
+            function renderSafeState() {
+                safeRows.forEach((row, i) => {
+                    row.classList.toggle("finished", i < safeStep);
+                    row.classList.toggle("current", i === safeStep && safeStep < safeSteps.length);
+                });
+                safeNodes.forEach((node, i) => node.classList.toggle("done", i < safeStep));
+                if (safeStep === 0) {
+                    const step = safeSteps[0];
+                    safeAvailable.textContent = step.before;
+                    safeMessage.textContent = `${step.process} can finish because Need ${step.need} is no greater than Available ${step.before}.`;
+                } else if (safeStep < safeSteps.length) {
+                    const completed = safeSteps[safeStep - 1];
+                    const step = safeSteps[safeStep];
+                    safeAvailable.textContent = step.before;
+                    safeMessage.textContent = `${completed.process} released ${completed.allocation}, so Available is now ${completed.after}. Next, ${step.process} can finish because its Need ${step.need} can be satisfied.`;
+                } else {
+                    const completed = safeSteps[safeSteps.length - 1];
+                    safeAvailable.textContent = completed.after;
+                    safeMessage.textContent = `${completed.process} released ${completed.allocation}. Every process completed in the order P1 → P2 → P3, so the state is safe.`;
+                }
+                safeNext.disabled = safeStep === safeSteps.length;
+                safeNext.textContent =
+                    safeStep === safeSteps.length ? "Safe state confirmed" : `Finish ${safeSteps[safeStep].process}`;
+            }
+            safeNext.onclick = () => {
+                if (safeStep < safeSteps.length) safeStep += 1;
+                renderSafeState();
+            };
+            document.getElementById("safeReset").onclick = () => {
+                safeStep = 0;
+                renderSafeState();
+            };
+            addEventListener("keydown", (e) => {
+                if (e.target instanceof Element && e.target.closest("button, input, select, textarea")) return;
+                if (["ArrowRight", "PageDown", " "].includes(e.key)) show(index + 1);
+                if (["ArrowLeft", "PageUp"].includes(e.key)) show(index - 1);
+                if (e.key.toLowerCase() === "n") document.getElementById("noteBtn").click();
+                if (e.key === "Home") show(0);
+                if (e.key === "End") show(slides.length - 1);
+            });
+            renderSafeState();
+            resetRecovery();
+            show(0);
+        </script>
+    </body>
+</html>
